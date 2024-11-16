@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Trash2, Plus, FileText, Loader } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import FileSelector from './FileSelector';
 
 const ModelMerger = () => {
   const [baseModel, setBaseModel] = useState('');
@@ -27,43 +28,43 @@ const ModelMerger = () => {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setIsProcessing(true);
-  setResult({ type: '', message: '' });
+    e.preventDefault();
+    setIsProcessing(true);
+    setResult({ type: '', message: '' });
 
-  try {
-    const response = await fetch('/api/merge', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        baseModel,
-        targetModel,
-        finetuneOutputs,
-        outputPath,
-      }),
-    });
+    try {
+      const response = await fetch('/api/merge', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          baseModel,
+          targetModel,
+          finetuneOutputs,
+          outputPath,
+        }),
+      });
 
-    const data = await response.json();
+      const data = await response.json();
 
-    if (!response.ok) {
-      throw new Error(data.message || 'Failed to merge models');
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to merge models');
+      }
+
+      setResult({
+        type: 'success',
+        message: data.message,
+      });
+    } catch (error) {
+      setResult({
+        type: 'error',
+        message: error instanceof Error ? error.message : 'An unknown error occurred',
+      });
+    } finally {
+      setIsProcessing(false);
     }
-
-    setResult({
-      type: 'success',
-      message: data.message,
-    });
-  } catch (error) {
-    setResult({
-      type: 'error',
-      message: error instanceof Error ? error.message : 'An unknown error occurred',
-    });
-  } finally {
-    setIsProcessing(false);
-  }
-};
+  };
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
@@ -99,29 +100,21 @@ const ModelMerger = () => {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Base Model Path</label>
-            <input
-              type="text"
-              value={baseModel}
-              onChange={(e) => setBaseModel(e.target.value)}
-              className="w-full p-2 border rounded"
-              placeholder="e.g., Qwen/Qwen2-7B"
-              required
-            />
-          </div>
+          <FileSelector
+            label="Base Model Path"
+            value={baseModel}
+            onChange={setBaseModel}
+            placeholder="e.g., Qwen/Qwen2-7B"
+            required
+          />
 
-          <div>
-            <label className="block text-sm font-medium mb-1">Target Model Path</label>
-            <input
-              type="text"
-              value={targetModel}
-              onChange={(e) => setTargetModel(e.target.value)}
-              className="w-full p-2 border rounded"
-              placeholder="e.g., Qwen/Qwen2-7B-Instruct"
-              required
-            />
-          </div>
+          <FileSelector
+            label="Target Model Path"
+            value={targetModel}
+            onChange={setTargetModel}
+            placeholder="e.g., Qwen/Qwen2-7B-Instruct"
+            required
+          />
 
           <div>
             <div className="flex justify-between items-center mb-2">
@@ -137,12 +130,11 @@ const ModelMerger = () => {
             </div>
             {finetuneOutputs.map((output, index) => (
               <div key={index} className="flex gap-2 mb-2">
-                <input
-                  type="text"
+                <FileSelector
+                  label={`Fine-tune output path ${index + 1}`}
                   value={output}
-                  onChange={(e) => updateFinetuneOutput(index, e.target.value)}
-                  className="flex-1 p-2 border rounded"
-                  placeholder={`Fine-tune output path ${index + 1}`}
+                  onChange={(value) => updateFinetuneOutput(index, value)}
+                  placeholder="Select fine-tune output directory"
                   required
                 />
                 {finetuneOutputs.length > 1 && (
@@ -158,17 +150,13 @@ const ModelMerger = () => {
             ))}
           </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-1">Output Path</label>
-            <input
-              type="text"
-              value={outputPath}
-              onChange={(e) => setOutputPath(e.target.value)}
-              className="w-full p-2 border rounded"
-              placeholder="Path to save merged model"
-              required
-            />
-          </div>
+          <FileSelector
+            label="Output Path"
+            value={outputPath}
+            onChange={setOutputPath}
+            placeholder="Path to save merged model"
+            required
+          />
         </div>
 
         <button

@@ -26,12 +26,31 @@ export default async function handler(
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
   }
-  
+
+  // Validate directory paths
+  const validatePath = (path: string) => {
+    try {
+      return fs.existsSync(path) && fs.lstatSync(path).isDirectory();
+    } catch (error) {
+      return false;
+    }
+  };
+
   // Input validation
   const { baseModel, targetModel, finetuneOutputs, outputPath, weights, densities } = req.body as MergeRequest;
-  
+
   if (!baseModel || !targetModel || !finetuneOutputs || !outputPath) {
     return res.status(400).json({ message: 'Missing required parameters' });
+  }
+
+  // Validate all paths
+  const paths = [baseModel, targetModel, ...finetuneOutputs];
+  for (const path of paths) {
+    if (!validatePath(path)) {
+      return res.status(400).json({
+        message: `Invalid directory path: ${path}`
+      });
+    }
   }
 
   // Validate paths
